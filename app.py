@@ -17,6 +17,10 @@ from utils import (
     retrieve_messages_from_thread,
     retrieve_assistant_created_files
     )
+from langchain_community.document_loaders import YoutubeLoader
+from fpdf import FPDF
+from io import BytesIO
+from werkzeug.utils import secure_filename
 
 # Get secrets
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", st.secrets["OPENAI_API_KEY"])
@@ -42,10 +46,16 @@ file_upload_box = st.empty()
 upload_btn = st.empty()
 text_box = st.empty()
 qn_btn = st.empty()
+
 def handle_url_input(url):
     """Function to handle URL input"""
+    loader = YoutubeLoader.from_youtube_url(
+    url, add_video_info=False
+    )
+    docs = loader.load()
     # Assuming a function to handle URL input and return a file ID
-    return "file_id"
+    
+    return docs[0].page_content
 # File Upload or URL
 if not st.session_state["file_uploaded"]:
     st.session_state["files"] = file_upload_box.file_uploader("Please upload your learning file(s) or enter a URL",
@@ -71,7 +81,30 @@ if not st.session_state["file_uploaded"]:
         # Handle URL submission
         if st.session_state["url"]:
             # Assuming a function to handle URL input and return a file ID
-            url_file_id = handle_url_input(st.session_state["url"])
+            url_content = handle_url_input(st.session_state["url"])
+            # Create a PDF file from the url_content
+
+
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.set_font("Arial", size=12)
+            pdf.multi_cell(0, 10, url_content)
+
+            file = BytesIO()
+            pdf_output = pdf.output(dest='S').encode('latin1')  # Get PDF as string and encode
+            file.write(pdf_output)  # Write to BytesIO
+            file.seek(0)
+
+            # Ensure the file has a .pdf extension
+            filename = secure_filename("url_content.pdf")
+
+            # Upload the PDF file to the assistants
+            oai_file = client.files.create(
+                file=(filename, file),
+                purpose='assistants'
+            )
+            url_file_id = oai_file.id
             st.session_state["file_id"].append(url_file_id)
             print(f"Processed URL to file ID: \t {url_file_id}")
 
