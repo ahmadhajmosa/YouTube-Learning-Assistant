@@ -110,19 +110,27 @@ if st.session_state["file_uploaded"]:
             thread = client.beta.threads.create()
             st.session_state.thread_id = thread.id
             print(f"Created new thread: \t {st.session_state.thread_id}")
+        for file_id in st.session_state.file_id:
+            print(f"File ID: \t {file_id}")
 
         # Update the thread to attach the file(s)
         client.beta.threads.update(
-            thread_id=st.session_state.thread_id,
-            tool_resources={"code_interpreter": {"file_ids": [file_id for file_id in st.session_state.file_id]}}
+            thread_id=st.session_state.thread_id
             )
+        
+        files = [file_id for file_id in st.session_state.file_id]
 
         # Ask the question
         client.beta.threads.messages.create(
             thread_id=st.session_state.thread_id,
             role="user",
             content=question,
+            attachments = [
+                {"file_id": files[0], "tools": [{"type": "file_search"}]}
+            ]
+              
         )
+        
 
         # Create a new text box to display the question
         st.session_state.text_boxes.append(st.empty())
@@ -131,7 +139,7 @@ if st.session_state["file_uploaded"]:
         # Run the Assistant and the EventHandler handles the stream
         with client.beta.threads.runs.stream(thread_id=st.session_state.thread_id,
                                              assistant_id=assistant.id,
-                                             tool_choice={"type": "code_interpreter"},
+                                             tool_choice={"type": "file_search"},
                                              event_handler=EventHandler(),
                                              temperature=0) as stream:
             stream.until_done()
