@@ -27,8 +27,8 @@ print(ASSISTANT_ID)
 client = OpenAI(api_key=OPENAI_API_KEY)
 assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
 
-st.set_page_config(page_title="DAVE",
-                   page_icon="🕵️")
+st.set_page_config(page_title="YL",
+                   page_icon="👨‍🏫")
 
 # Apply custom CSS
 render_custom_css()
@@ -37,34 +37,45 @@ render_custom_css()
 initialise_session_state()
 
 # UI
-st.subheader("🔮 DAVE: Data Analysis & Visualisation Engine")
+st.subheader("🔮 YouTube Learning Material Generator")
 file_upload_box = st.empty()
 upload_btn = st.empty()
 text_box = st.empty()
 qn_btn = st.empty()
-
-# File Upload
+def handle_url_input(url):
+    """Function to handle URL input"""
+    # Assuming a function to handle URL input and return a file ID
+    return "file_id"
+# File Upload or URL
 if not st.session_state["file_uploaded"]:
-    st.session_state["files"] = file_upload_box.file_uploader("Please upload your dataset(s)",
+    st.session_state["files"] = file_upload_box.file_uploader("Please upload your learning file(s) or enter a URL",
                                                               accept_multiple_files=True,
-                                                              type=["csv"])
+                                                              type=["pdf", "docx", "txt", "pptx", "ppt", "doc", "xlsx", "xls", "csv"])
+    st.session_state["url"] = st.text_input("Or enter a URL to your learning material")
 
-    if upload_btn.button("Upload"):
+    if upload_btn.button("Upload") or (st.session_state["url"] and upload_btn.button("Submit URL")):
 
         st.session_state["file_id"] = []
 
-        # Upload the file
-        for file in st.session_state["files"]:
-            oai_file = client.files.create(
-                file=file,
-                purpose='assistants'
-            )
+        # Upload the file(s)
+        if st.session_state["files"]:
+            for file in st.session_state["files"]:
+                oai_file = client.files.create(
+                    file=file,
+                    purpose='assistants'
+                )
+                # Append the file ID to the list
+                st.session_state["file_id"].append(oai_file.id)
+                print(f"Uploaded new file: \t {oai_file.id}")
 
-            # Append the file ID to the list
-            st.session_state["file_id"].append(oai_file.id)
-            print(f"Uploaded new file: \t {oai_file.id}")
+        # Handle URL submission
+        if st.session_state["url"]:
+            # Assuming a function to handle URL input and return a file ID
+            url_file_id = handle_url_input(st.session_state["url"])
+            st.session_state["file_id"].append(url_file_id)
+            print(f"Processed URL to file ID: \t {url_file_id}")
 
-        st.toast("File(s) uploaded successfully", icon="🚀")
+        st.toast("File(s) or URL processed successfully", icon="🚀")
         st.session_state["file_uploaded"] = True
         file_upload_box.empty()
         upload_btn.empty()
