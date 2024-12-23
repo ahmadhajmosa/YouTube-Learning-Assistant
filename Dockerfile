@@ -12,8 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application code into the container
 COPY . .
-ENV OPENAI_API_KEY="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"
-ENV OPENAI_ASSISTANT_ID="asst_VJZ2bkhVvyXUgzPkkvJ2Y5us"
+
 
 # Expose the port that Streamlit will run on
 EXPOSE 8501
